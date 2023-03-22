@@ -163,15 +163,20 @@ export class GamePlay {
   checkGameState() {
     if (!this.state.value.mineGenerated)
       return
-
     const blocks = this.board.flat()
 
     if (blocks.every(block => block.reveoled || block.flagged)) {
+      if (this.state.value.gameState !== 'play')
+        return
       if (blocks.some(block => block.flagged && !block.mine)) {
         this.state.value.gameState = 'lost'
         this.showAllMines()
+        alert('lost')
       }
-      else { this.state.value.gameState = 'win' }
+      else {
+        this.state.value.gameState = 'win'
+        alert('win')
+      }
     }
   }
 }

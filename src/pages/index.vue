@@ -13,6 +13,10 @@ function submit(e: KeyboardEvent) {
     play.reset(borderSize.value)
   }
 }
+
+watchEffect(() => {
+  play.checkGameState()
+})
 </script>
 
 <template>
