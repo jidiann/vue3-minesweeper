@@ -7,7 +7,7 @@
     <a
       icon-btn i-carbon-logo-github
       rel="noreferrer"
-      href="https://github.com/antfu/vitesse-lite"
+      href="https://github.com/jidiann/vue3-minesweeper.git"
       target="_blank"
       title="GitHub"
     />
