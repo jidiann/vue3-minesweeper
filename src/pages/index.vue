@@ -27,7 +27,7 @@ function generateMines(initial: BlockState) {
         return
       if (Math.abs(initial.y - block.y) <= 1)
         return
-      block.mine = Math.random() < 0.5
+      block.mine = Math.random() < 0.9
     },
     ),
   )
@@ -131,6 +131,8 @@ function blockClick(block: BlockState) {
 
   if (block.mine)
     alert('BOOM!')
+  else
+    checkGameState()
 
   expendZero(block)
 }
@@ -141,9 +143,11 @@ function blockFlag(block: BlockState) {
     return
 
   block.flagged = !block.flagged
+
+  checkGameState()
 }
 
-watchEffect(checkGameState)
+// watchEffect(checkGameState)
 
 // 监控游戏状态
 function checkGameState() {
@@ -153,6 +157,8 @@ function checkGameState() {
   const blocks = state.value.flat()
 
   if (blocks.every(block => block.reveoled || block.flagged)) {
+    console.log(blocks)
+
     if (blocks.some(block => block.flagged && !block.mine))
       alert('YOU CHEAT!')
     else
