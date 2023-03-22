@@ -24,12 +24,17 @@ export class GamePlay {
   constructor(
     public width: number,
     public height: number,
+    public mines: number,
   ) {
     this.reset()
   }
 
   get board() {
     return this.state.value?.board
+  }
+
+  get blocks() {
+    return this.state.value?.board.flat()
   }
 
   // 重置
@@ -55,18 +60,36 @@ export class GamePlay {
     }
   }
 
+  random(min: number, max: number) {
+    return Math.random() * (max - min) + min
+  }
+
+  randomInt(min: number, max: number) {
+    return Math.round(this.random(min, max))
+  }
+
   // 生成炸弹
-  generateMines(initial: BlockState) {
-    this.board.forEach(row =>
-      row.forEach((block) => {
-        if (Math.abs(initial.x - block.x) <= 1)
-          return
-        if (Math.abs(initial.y - block.y) <= 1)
-          return
-        block.mine = Math.random() < 0.3
-      },
-      ),
-    )
+  generateMines(state: BlockState[][], initial: BlockState) {
+    const placeRandom = () => {
+      const x = this.randomInt(0, this.width - 1)
+      const y = this.randomInt(0, this.height - 1)
+      const block = state[y][x]
+
+      if (Math.abs(initial.x - block.x) <= 1)
+        return false
+      if (Math.abs(initial.y - block.y) <= 1)
+        return false
+
+      block.mine = true
+      return true
+    }
+
+    Array.from({ length: this.mines }, () => null)
+      .forEach(() => {
+        let placed = false
+        while (!placed)
+          placed = placeRandom()
+      })
     this.updateNumbers()
   }
 
@@ -130,7 +153,7 @@ export class GamePlay {
       return
 
     if (!this.state.value.mineGenerated) {
-      this.generateMines(block)
+      this.generateMines(this.board, block)
       this.state.value.mineGenerated = true
     }
 
@@ -163,12 +186,10 @@ export class GamePlay {
   checkGameState() {
     if (!this.state.value.mineGenerated)
       return
-    const blocks = this.board.flat()
-
-    if (blocks.every(block => block.reveoled || block.flagged)) {
+    if (this.blocks.every(block => block.reveoled || block.flagged)) {
       if (this.state.value.gameState !== 'play')
         return
-      if (blocks.some(block => block.flagged && !block.mine)) {
+      if (this.blocks.some(block => block.flagged && !block.mine)) {
         this.state.value.gameState = 'lost'
         this.showAllMines()
         alert('lost')

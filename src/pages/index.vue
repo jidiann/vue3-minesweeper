@@ -2,10 +2,14 @@
 import { GamePlay, isDev, toggleDev } from '~/composables'
 
 const borderSize = ref<number>(12)
+const mines = ref<number>(30)
 
-const play = new GamePlay(borderSize.value, borderSize.value)
+const play = new GamePlay(borderSize.value, borderSize.value, mines.value)
+
 useStorage('vue3MineSweeper-state', play.state)
+
 const state = computed(() => play.board)
+
 function submit(e: KeyboardEvent) {
   if (e.key === 'Enter') {
     if (borderSize.value < 5)
@@ -17,6 +21,10 @@ function submit(e: KeyboardEvent) {
 watchEffect(() => {
   play.checkGameState()
 })
+
+const mineCount = computed(() => {
+  return play.blocks.reduce((a, b) => a + (b.mine ? 1 : 0), 0)
+})
 </script>
 
 <template>
@@ -27,19 +35,22 @@ watchEffect(() => {
       board-size： <input v-model="borderSize" type="text" w-10 h-5 text-black text-xs @keydown="submit">
     </div>
 
-    <div
-      v-for="row, y in state"
-      :key="y"
-      flex="~"
-      items-center justify-center
-    >
-      <MineBlock
-        v-for="block, x in row"
-        :key="x"
-        :block="block"
-        @click="play.blockClick(block)"
-        @contextmenu.prevent="play.blockFlag(block)"
-      />
+    <div p5 w-full overflow-auto>
+      <div
+        v-for="row, y in state"
+        :key="y"
+        flex="~"
+        items-center justify-center
+        w-max ma
+      >
+        <MineBlock
+          v-for="block, x in row"
+          :key="x"
+          :block="block"
+          @click="play.blockClick(block)"
+          @contextmenu.prevent="play.blockFlag(block)"
+        />
+      </div>
     </div>
 
     <div flex="~ gap-1" justify-center mt-7>
@@ -51,5 +62,7 @@ watchEffect(() => {
         REST
       </button>
     </div>
+
+    <div>{{ mineCount }}</div>
   </div>
 </template>
