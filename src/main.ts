@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from 'virtual:generated-pages'
+import { createHead } from '@vueuse/head'
 import App from './App.vue'
 
 import '@unocss/reset/tailwind.css'
@@ -13,4 +14,8 @@ const router = createRouter({
   routes,
 })
 app.use(router)
+
+const head = createHead()
+app.use(head)
+
 app.mount('#app')

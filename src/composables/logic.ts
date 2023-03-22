@@ -4,17 +4,22 @@ import type { BlockState } from '~/type'
 const directions = [
   [1, 1],
   [1, 0],
-  [1, -1],
-  [-1, -1],
+  [0, 1],
   [0, -1],
   [-1, 0],
+  [1, -1],
   [-1, 1],
-  [0, 1],
+  [-1, -1],
 ]
 
+interface GameState {
+  mineGenerated: boolean // 是否初始化炸弹
+  gameState: 'play' | 'win' | 'lost' // 是否游戏结束
+  board: BlockState[][] // 初始化棋盘
+}
+
 export class GamePlay {
-  state = ref<BlockState[][]>([]) // 初始化棋盘
-  mineGenerated = false // 是否初始化炸弹
+  state = ref() as Ref<GameState>
 
   constructor(
     public width: number,
@@ -23,27 +28,36 @@ export class GamePlay {
     this.reset()
   }
 
-  // 重置
-  reset() {
-    this.mineGenerated = false
+  get board() {
+    return this.state.value?.board
+  }
 
-    this.state.value = Array.from({ length: this.height }, (_, y) =>
-      Array.from({ length: this.width },
-        (_, x): BlockState => ({
-          x,
-          y,
-          reveoled: false,
-          mine: false,
-          flagged: false,
-          adjacentMines: 0,
-        }),
-      ),
-    )
+  // 重置
+  reset(borderSize?: number) {
+    if (borderSize) {
+      this.width = borderSize
+      this.height = borderSize
+    }
+    this.state.value = {
+      mineGenerated: false,
+      gameState: 'play',
+      board: Array.from({ length: this.height }, (_, y) =>
+        Array.from({ length: this.width },
+          (_, x): BlockState => ({
+            x,
+            y,
+            reveoled: false,
+            mine: false,
+            flagged: false,
+            adjacentMines: 0,
+          }),
+        )),
+    }
   }
 
   // 生成炸弹
   generateMines(initial: BlockState) {
-    this.state.value.forEach(row =>
+    this.board.forEach(row =>
       row.forEach((block) => {
         if (Math.abs(initial.x - block.x) <= 1)
           return
@@ -72,7 +86,7 @@ export class GamePlay {
 
   // 初始化数字
   updateNumbers() {
-    this.state.value.forEach(row =>
+    this.board.forEach(row =>
       row.forEach((block) => {
         if (block.mine)
           return
@@ -82,8 +96,7 @@ export class GamePlay {
             if (b.mine)
               block.adjacentMines += 1
           })
-      },
-      ),
+      }),
     )
   }
 
@@ -96,33 +109,48 @@ export class GamePlay {
       if (x2 < 0 || x2 >= this.height || y2 < 0 || y2 >= this.width)
         return undefined
 
-      return this.state.value[y2][x2]
+      return this.board[y2][x2]
     })
       .filter(Boolean) as BlockState[]
   }
 
+  showAllMines() {
+    this.board.flat().forEach((i) => {
+      if (i.mine)
+        i.reveoled = true
+    })
+  }
+
   // 左键点击事件
   blockClick(block: BlockState) {
+    if (this.state.value.gameState !== 'play')
+      return
+
     if (block.flagged)
       return
 
-    if (!this.mineGenerated) {
+    if (!this.state.value.mineGenerated) {
       this.generateMines(block)
-      this.mineGenerated = true
+      this.state.value.mineGenerated = true
     }
 
     block.reveoled = true
 
-    if (block.mine)
-      alert('BOOM!')
-    else
-      this.checkGameState()
+    if (block.mine) {
+      this.state.value.gameState = 'lost'
+      this.showAllMines()
+      return
+    }
+    else { this.checkGameState() }
 
     this.expendZero(block)
   }
 
   // 插旗
   blockFlag(block: BlockState) {
+    if (this.state.value.gameState !== 'play')
+      return
+
     if (block.reveoled)
       return
 
@@ -133,16 +161,17 @@ export class GamePlay {
 
   // 监控游戏状态
   checkGameState() {
-    if (!this.mineGenerated)
+    if (!this.state.value.mineGenerated)
       return
 
-    const blocks = this.state.value.flat()
+    const blocks = this.board.flat()
 
     if (blocks.every(block => block.reveoled || block.flagged)) {
-      if (blocks.some(block => block.flagged && !block.mine))
-        alert('YOU CHEAT!')
-      else
-        alert('YOU WIN!')
+      if (blocks.some(block => block.flagged && !block.mine)) {
+        this.state.value.gameState = 'lost'
+        this.showAllMines()
+      }
+      else { this.state.value.gameState = 'win' }
     }
   }
 }
