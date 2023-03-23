@@ -14,7 +14,7 @@ const directions = [
 
 interface GameState {
   mineGenerated: boolean // 是否初始化炸弹
-  gameState: 'play' | 'win' | 'lost' // 是否游戏结束
+  gameState: 'play' | 'won' | 'lost' // 是否游戏结束
   board: BlockState[][] // 初始化棋盘
 }
 
@@ -192,11 +192,9 @@ export class GamePlay {
       if (this.blocks.some(block => block.flagged && !block.mine)) {
         this.state.value.gameState = 'lost'
         this.showAllMines()
-        alert('lost')
       }
       else {
-        this.state.value.gameState = 'win'
-        alert('win')
+        this.state.value.gameState = 'won'
       }
     }
   }

@@ -1,8 +1,8 @@
 <script setup lang="ts" generic="T extends any, O extends any">
 import { GamePlay, isDev, toggleDev } from '~/composables'
 
-const borderSize = ref<number>(12)
-const mines = ref<number>(30)
+const borderSize = ref<number>(5)
+const mines = ref<number>(3)
 
 const play = new GamePlay(borderSize.value, borderSize.value, mines.value)
 
@@ -65,4 +65,6 @@ const mineCount = computed(() => {
 
     <div>{{ mineCount }}</div>
   </div>
+
+  <Confetti :passed="play.state.value.gameState === 'won'" />
 </template>
