@@ -12,10 +12,14 @@ const directions = [
   [-1, -1],
 ]
 
+type GameStatus = 'play' | 'won' | 'lost'
+
 interface GameState {
   mineGenerated: boolean // 是否初始化炸弹
-  gameState: 'play' | 'won' | 'lost' // 是否游戏结束
+  status: GameStatus // 是否游戏结束
   board: BlockState[][] // 初始化棋盘
+  startMS?: number // 开始时间
+  endMS?: number // 结束时间
 }
 
 export class GamePlay {
@@ -38,14 +42,18 @@ export class GamePlay {
   }
 
   // 重置
-  reset(borderSize?: number) {
-    if (borderSize) {
-      this.width = borderSize
-      this.height = borderSize
-    }
+  reset(
+    width = this.width,
+    height = this.height,
+    mines = this.mines,
+  ) {
+    this.width = width
+    this.height = height
+    this.mines = mines
+
     this.state.value = {
       mineGenerated: false,
-      gameState: 'play',
+      status: 'play',
       board: Array.from({ length: this.height }, (_, y) =>
         Array.from({ length: this.width },
           (_, x): BlockState => ({
@@ -57,6 +65,7 @@ export class GamePlay {
             adjacentMines: 0,
           }),
         )),
+      startMS: +new Date(),
     }
   }
 
@@ -75,9 +84,10 @@ export class GamePlay {
       const y = this.randomInt(0, this.height - 1)
       const block = state[y][x]
 
-      if (Math.abs(initial.x - block.x) <= 1)
+      if (Math.abs(initial.x - block.x) <= 1 && Math.abs(initial.y - block.y) <= 1)
         return false
-      if (Math.abs(initial.y - block.y) <= 1)
+
+      if (block.mine)
         return false
 
       block.mine = true
@@ -126,8 +136,8 @@ export class GamePlay {
   // 获取边界
   getSiblings(block: BlockState) {
     return directions.map(([dx, dy]) => {
-      const x2 = block.x + dx
-      const y2 = block.y + dy
+      const x2: number = block.x + dx
+      const y2: number = block.y + dy
 
       if (x2 < 0 || x2 >= this.height || y2 < 0 || y2 >= this.width)
         return undefined
@@ -146,7 +156,7 @@ export class GamePlay {
 
   // 左键点击事件
   blockClick(block: BlockState) {
-    if (this.state.value.gameState !== 'play')
+    if (this.state.value.status !== 'play')
       return
 
     if (block.flagged)
@@ -160,26 +170,23 @@ export class GamePlay {
     block.reveoled = true
 
     if (block.mine) {
-      this.state.value.gameState = 'lost'
+      this.onGameOver('lost')
       this.showAllMines()
       return
     }
-    else { this.checkGameState() }
 
     this.expendZero(block)
   }
 
   // 插旗
   blockFlag(block: BlockState) {
-    if (this.state.value.gameState !== 'play')
+    if (this.state.value.status !== 'play')
       return
 
     if (block.reveoled)
       return
 
     block.flagged = !block.flagged
-
-    this.checkGameState()
   }
 
   // 监控游戏状态
@@ -187,15 +194,44 @@ export class GamePlay {
     if (!this.state.value.mineGenerated)
       return
     if (this.blocks.every(block => block.reveoled || block.flagged)) {
-      if (this.state.value.gameState !== 'play')
+      if (this.state.value.status !== 'play')
         return
-      if (this.blocks.some(block => block.flagged && !block.mine)) {
-        this.state.value.gameState = 'lost'
-        this.showAllMines()
-      }
-      else {
-        this.state.value.gameState = 'won'
-      }
+      if (this.blocks.some(block => block.flagged && !block.mine))
+        this.onGameOver('lost')
+      else
+        this.onGameOver('won')
     }
+  }
+
+  // 双击自动展开
+  autoExpand(block: BlockState) {
+    const siblings = this.getSiblings(block)
+    const flags = siblings.reduce((a, b) => a + (!b.flagged ? 1 : 0), 0)
+    const notRevealed = siblings.reduce((a, b) => a + ((!b.reveoled && !b.flagged) ? 1 : 0), 0)
+    if (flags === block.adjacentMines) {
+      siblings.forEach((i) => {
+        i.reveoled = true
+        if (i.mine)
+          this.onGameOver('lost')
+      })
+    }
+    const missingFlags = block.adjacentMines = flags
+    if (notRevealed === missingFlags) {
+      siblings.forEach((i) => {
+        if (!i.reveoled && !i.flagged)
+          i.flagged = true
+      })
+    }
+  }
+
+  onGameOver(status: GameStatus) {
+    this.state.value.status = status
+    this.state.value.endMS = +Date.now()
+    if (status === 'lost')
+      this.showAllMines()
+
+    setTimeout(() => {
+      alert('lost')
+    }, 10)
   }
 }
