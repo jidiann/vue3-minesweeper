@@ -171,7 +171,6 @@ export class GamePlay {
 
     if (block.mine) {
       this.onGameOver('lost')
-      this.showAllMines()
       return
     }
 
@@ -191,16 +190,12 @@ export class GamePlay {
 
   // 监控游戏状态
   checkGameState() {
-    if (!this.state.value.mineGenerated)
+    if (!this.state.value.mineGenerated || this.state.value.status !== 'play')
       return
-    if (this.blocks.every(block => block.reveoled || block.flagged)) {
-      if (this.state.value.status !== 'play')
-        return
-      if (this.blocks.some(block => block.flagged && !block.mine))
-        this.onGameOver('lost')
-      else
-        this.onGameOver('won')
-    }
+    const blocks = this.board.flat()
+
+    if (!blocks.some(block => !block.mine && !block.reveoled))
+      this.onGameOver('won')
   }
 
   // 双击自动展开
@@ -227,11 +222,11 @@ export class GamePlay {
   onGameOver(status: GameStatus) {
     this.state.value.status = status
     this.state.value.endMS = +Date.now()
-    if (status === 'lost')
+    if (status === 'lost') {
       this.showAllMines()
-
-    setTimeout(() => {
-      alert('lost')
-    }, 10)
+      setTimeout(() => {
+        alert('lost')
+      }, 10)
+    }
   }
 }
